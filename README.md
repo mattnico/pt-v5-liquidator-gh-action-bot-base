@@ -46,7 +46,7 @@ Start by forking this bot to your own new repository - this essentially deploys 
 
 #### 2. Set your environment variables
 
-Once the repository has been forked you can update your `Secrets` (under `Settings`) to point to your own API keys. Each bot requires 2 secrets: a private key which will send transactions on your bot's behalf, and a RPC URL such as one from [Infura](https://www.infura.io/) or [Alchemy](https://www.alchemy.com/).
+Once the repository has been forked you can update your `Secrets` (under `Settings`) to point to your own API keys. Each bot requires 3 main secrets: a private key which will send transactions on your bot's behalf, a RPC URL such as one from [Infura](https://www.infura.io/) or [Alchemy](https://www.alchemy.com/), and an Ankr API key for token pricing data.
 
 > <kbd><img src="https://github.com/GenerationSoftware/pt-v5-liquidator-gh-action-bot/blob/main/images/screenshot-settings-1.jpg?raw=true" /></kbd>
 
@@ -62,7 +62,7 @@ Once the repository has been forked you can update your `Secrets` (under `Settin
 
 > <kbd><img src="https://github.com/GenerationSoftware/pt-v5-liquidator-gh-action-bot/blob/main/images/screenshot-settings-3-covalent-api.jpg?raw=true" /></kbd>
 
-`COVALENT_API_KEY`: a Covalent API key is needed to assist the bot in looking up dollar values of tokens. You can register for a free API key here: [https://www.covalenthq.com/platform/auth/register/](https://www.covalenthq.com/platform/auth/register/)
+`ANKR_API_KEY`: an Ankr API key is needed to assist the bot in looking up dollar values of tokens. Ankr provides real-time on-chain token pricing data. You can register for a free API key here: [https://www.ankr.com/](https://www.ankr.com/)
 
 > <kbd><img src="https://github.com/GenerationSoftware/pt-v5-liquidator-gh-action-bot/blob/main/images/screenshot-settings-5-some.jpg?raw=true" /></kbd>
 

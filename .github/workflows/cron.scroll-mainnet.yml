@@ -8,7 +8,7 @@ env:
   MIN_PROFIT_THRESHOLD_USD: 0.5
   SWAP_RECIPIENT: ''
   JSON_RPC_URL: ${{ secrets.SCROLL_MAINNET_JSON_RPC_URL }}
-  COVALENT_API_KEY: ${{ secrets.COVALENT_API_KEY }}
+  ANKR_API_KEY: ${{ secrets.ANKR_API_KEY }}
   CUSTOM_RELAYER_PRIVATE_KEY: ${{ secrets.CUSTOM_RELAYER_PRIVATE_KEY }}
   CONTRACT_JSON_URL: 'https://raw.githubusercontent.com/GenerationSoftware/pt-v5-mainnet/196aa20f4a0b3e651d0504ffeb0e1b9a08c7ccb6/deployments/scroll/contracts.json'
   ENV_TOKEN_ALLOW_LIST: ''

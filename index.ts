@@ -13,8 +13,26 @@ import {
   RelayerAccount,
 } from "@generationsoftware/pt-v5-autotasks-library";
 
+// Import and apply Ankr patch
+import { applyAnkrPatch, setAnkrApiKey } from "./src/utils/libraryPatch";
+
 const main = async () => {
+  // Load environment variables
   const envVars: LiquidatorEnvVars = loadLiquidatorEnvVars();
+  
+  // Apply Ankr patch to replace Covalent API with Ankr API
+  console.log('🔧 Applying Ankr API patch to replace Covalent...');
+  applyAnkrPatch();
+  
+  // Set the Ankr API key for the patched functions
+  const ankrApiKey = process.env.ANKR_API_KEY;
+  if (ankrApiKey) {
+    setAnkrApiKey(ankrApiKey);
+    console.log('✅ Ankr API key configured successfully');
+  } else {
+    console.warn('⚠️  No ANKR_API_KEY found. Price fetching may fall back to other sources.');
+  }
+
   const provider: BaseProvider = getProvider(envVars);
 
   const relayerAccount: RelayerAccount = await instantiateRelayerAccount(
@@ -25,7 +43,7 @@ const main = async () => {
   const config: LiquidatorConfig = {
     ...relayerAccount,
     provider,
-    covalentApiKey: envVars.COVALENT_API_KEY,
+    covalentApiKey: ankrApiKey || envVars.COVALENT_API_KEY, // Use Ankr key but keep field name for compatibility
     chainId: envVars.CHAIN_ID,
     swapRecipient: envVars.SWAP_RECIPIENT,
     minProfitThresholdUsd: Number(envVars.MIN_PROFIT_THRESHOLD_USD),
