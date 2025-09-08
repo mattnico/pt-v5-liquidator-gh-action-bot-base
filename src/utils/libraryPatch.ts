@@ -36,10 +36,10 @@ export const patchedGetNativeTokenMarketRateUsd = async (
 };
 
 // Apply the patch to the loaded library
-export const applyAnkrPatch = () => {
+export const applyAnkrPatch = async () => {
   try {
-    // Import the library module
-    const getUsdModule = require('@generationsoftware/pt-v5-autotasks-library/dist/utils/getUsd.js');
+    // Import the library module using dynamic import
+    const getUsdModule = await import('@generationsoftware/pt-v5-autotasks-library/dist/utils/getUsd.js');
     
     // Replace the Covalent functions with Ankr versions
     if (getUsdModule.getCovalentMarketRateUsd) {

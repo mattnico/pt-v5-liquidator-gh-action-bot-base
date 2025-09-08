@@ -22,7 +22,7 @@ const main = async () => {
   
   // Apply Ankr patch to replace Covalent API with Ankr API
   console.log('🔧 Applying Ankr API patch to replace Covalent...');
-  applyAnkrPatch();
+  await applyAnkrPatch();
   
   // Set the Ankr API key for the patched functions
   const ankrApiKey = process.env.ANKR_API_KEY;
