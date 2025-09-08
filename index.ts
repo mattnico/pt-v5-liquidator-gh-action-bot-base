@@ -13,25 +13,23 @@ import {
   RelayerAccount,
 } from "@generationsoftware/pt-v5-autotasks-library";
 
-// Import and apply Ankr patch
-import { applyAnkrPatch, setAnkrApiKey } from "./src/utils/libraryPatch";
-
 const main = async () => {
   // Load environment variables
   const envVars: LiquidatorEnvVars = loadLiquidatorEnvVars();
   
-  // Apply Ankr patch to replace Covalent API with Ankr API
-  console.log('🔧 Applying Ankr API patch to replace Covalent...');
-  await applyAnkrPatch();
-  
-  // Set the Ankr API key for the patched functions
+  // Since Covalent API is defunct, we'll let the library use DexScreener and CoinGecko
+  // which are still functional fallbacks in the pt-v5-autotasks-library
   const ankrApiKey = process.env.ANKR_API_KEY;
   if (ankrApiKey) {
-    setAnkrApiKey(ankrApiKey);
-    console.log('✅ Ankr API key configured successfully');
+    console.log('🔧 Ankr API key available for future price fetching enhancements');
+    console.log('📊 Current setup: Library will use DexScreener → CoinGecko fallback chain');
+    console.log('✅ Covalent API dependency bypassed successfully');
   } else {
-    console.warn('⚠️  No ANKR_API_KEY found. Price fetching may fall back to other sources.');
+    console.log('📊 Using DexScreener → CoinGecko price fallback (Covalent bypassed)');
   }
+  
+  // Don't pass the defunct Covalent API key to avoid failed API calls
+  // The library will automatically fall back to working price sources
 
   const provider: BaseProvider = getProvider(envVars);
 
@@ -43,7 +41,9 @@ const main = async () => {
   const config: LiquidatorConfig = {
     ...relayerAccount,
     provider,
-    covalentApiKey: ankrApiKey || envVars.COVALENT_API_KEY, // Use Ankr key but keep field name for compatibility
+    // Don't pass covalentApiKey to avoid defunct API calls
+    // Library will use DexScreener → CoinGecko fallback automatically
+    covalentApiKey: undefined,
     chainId: envVars.CHAIN_ID,
     swapRecipient: envVars.SWAP_RECIPIENT,
     minProfitThresholdUsd: Number(envVars.MIN_PROFIT_THRESHOLD_USD),

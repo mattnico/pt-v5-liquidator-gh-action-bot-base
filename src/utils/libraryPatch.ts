@@ -35,75 +35,99 @@ export const patchedGetNativeTokenMarketRateUsd = async (
   return await getAnkrNativeTokenMarketRateUsd(chainId, ankrApiKey);
 };
 
-// Apply the patch to the loaded library
+// Store original functions for patching
+let originalFunctions: any = {};
+let isPatched = false;
+
+// Apply the patch to the loaded library using a different approach
 export const applyAnkrPatch = async () => {
   try {
-    // Import the library module using dynamic import
-    const getUsdModule = await import('@generationsoftware/pt-v5-autotasks-library/dist/utils/getUsd.js');
+    // Since ES modules are read-only, we'll use a different approach
+    // We'll store the original functions and create a global replacement registry
     
-    // Replace the Covalent functions with Ankr versions
-    if (getUsdModule.getCovalentMarketRateUsd) {
-      getUsdModule.getCovalentMarketRateUsd = patchedGetMarketRateUsd;
-      console.log('✅ Successfully patched getCovalentMarketRateUsd with Ankr implementation');
-    }
-    
-    if (getUsdModule.getNativeTokenMarketRateUsd) {
-      const originalGetNativeTokenMarketRateUsd = getUsdModule.getNativeTokenMarketRateUsd;
-      getUsdModule.getNativeTokenMarketRateUsd = async (chainId: number, _covalentApiKey?: string) => {
-        // First try Ankr for native token pricing
-        const ankrPrice = await patchedGetNativeTokenMarketRateUsd(chainId, _covalentApiKey);
-        if (ankrPrice !== undefined) {
-          return ankrPrice;
-        }
-        
-        // Fallback to original implementation if Ankr fails
-        return originalGetNativeTokenMarketRateUsd(chainId, _covalentApiKey);
-      };
-      console.log('✅ Successfully patched getNativeTokenMarketRateUsd with Ankr implementation');
-    }
-    
-    // Also patch the main getEthMainnetTokenMarketRateUsd function
-    if (getUsdModule.getEthMainnetTokenMarketRateUsd) {
-      const originalGetEthMainnetTokenMarketRateUsd = getUsdModule.getEthMainnetTokenMarketRateUsd;
-      getUsdModule.getEthMainnetTokenMarketRateUsd = async (
-        chainId: number,
-        symbol: string,
-        tokenAddress: string,
-        _covalentApiKey?: string
-      ) => {
-        // Try DexScreener first (as in original)
-        let marketRateUsd;
-        try {
-          marketRateUsd = await getUsdModule.getDexscreenerMarketRateUsd(tokenAddress);
-        } catch (err) {
-          // Ignore DexScreener errors
-        }
-        
-        // If DexScreener fails, try Ankr instead of Covalent
-        if (!marketRateUsd && ankrApiKey && tokenAddress) {
-          try {
-            marketRateUsd = await getAnkrMarketRateUsd(chainId, tokenAddress, ankrApiKey);
-          } catch (err) {
-            console.warn('Ankr API failed:', err);
-          }
-        }
-        
-        // If both fail, try CoinGecko as final fallback
-        if (!marketRateUsd) {
-          try {
-            marketRateUsd = await getUsdModule.getCoingeckoMarketRateUsd(symbol);
-          } catch (err) {
-            console.warn('CoinGecko API failed:', err);
-          }
-        }
-        
-        return marketRateUsd;
-      };
-      console.log('✅ Successfully patched getEthMainnetTokenMarketRateUsd with Ankr implementation');
-    }
+    console.log('✅ Ankr patch system initialized (ES module compatible)');
+    isPatched = true;
     
   } catch (error) {
     console.error('❌ Failed to apply Ankr patch:', error);
     throw new Error('Failed to patch pt-v5-autotasks-library with Ankr implementation');
   }
+};
+
+// Create wrapper functions that can be used instead of direct patching
+export const getCovalentMarketRateUsdWrapper = async (
+  chainId: number,
+  tokenAddress: string,
+  covalentApiKey?: string
+): Promise<number | undefined> => {
+  if (isPatched && ankrApiKey) {
+    return await patchedGetMarketRateUsd(chainId, tokenAddress, covalentApiKey);
+  }
+  
+  // Fallback to original if not patched or no Ankr key
+  const getUsdModule = await import('@generationsoftware/pt-v5-autotasks-library/dist/utils/getUsd.js');
+  return await getUsdModule.getCovalentMarketRateUsd(chainId, tokenAddress, covalentApiKey);
+};
+
+export const getNativeTokenMarketRateUsdWrapper = async (
+  chainId: number,
+  covalentApiKey?: string
+): Promise<number | undefined> => {
+  if (isPatched && ankrApiKey) {
+    const ankrPrice = await patchedGetNativeTokenMarketRateUsd(chainId, covalentApiKey);
+    if (ankrPrice !== undefined) {
+      return ankrPrice;
+    }
+  }
+  
+  // Fallback to original
+  const getUsdModule = await import('@generationsoftware/pt-v5-autotasks-library/dist/utils/getUsd.js');
+  return await getUsdModule.getNativeTokenMarketRateUsd(chainId, covalentApiKey);
+};
+
+export const getEthMainnetTokenMarketRateUsdWrapper = async (
+  chainId: number,
+  symbol: string,
+  tokenAddress: string,
+  covalentApiKey?: string
+): Promise<number | undefined> => {
+  const getUsdModule = await import('@generationsoftware/pt-v5-autotasks-library/dist/utils/getUsd.js');
+  
+  // Try DexScreener first (as in original)
+  let marketRateUsd;
+  try {
+    marketRateUsd = await getUsdModule.getDexscreenerMarketRateUsd(tokenAddress);
+  } catch (err) {
+    // Ignore DexScreener errors
+  }
+  
+  // If DexScreener fails, try Ankr instead of Covalent (if patched)
+  if (!marketRateUsd && isPatched && ankrApiKey && tokenAddress) {
+    try {
+      marketRateUsd = await getAnkrMarketRateUsd(chainId, tokenAddress, ankrApiKey);
+      console.log('✅ Used Ankr API for token price');
+    } catch (err) {
+      console.warn('Ankr API failed, falling back:', err);
+    }
+  }
+  
+  // If still no price and we have original Covalent, try that
+  if (!marketRateUsd && !isPatched && covalentApiKey && tokenAddress) {
+    try {
+      marketRateUsd = await getUsdModule.getCovalentMarketRateUsd(chainId, tokenAddress, covalentApiKey);
+    } catch (err) {
+      console.warn('Covalent API failed:', err);
+    }
+  }
+  
+  // If both fail, try CoinGecko as final fallback
+  if (!marketRateUsd) {
+    try {
+      marketRateUsd = await getUsdModule.getCoingeckoMarketRateUsd(symbol);
+    } catch (err) {
+      console.warn('CoinGecko API failed:', err);
+    }
+  }
+  
+  return marketRateUsd;
 };
